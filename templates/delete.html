@@ -1,0 +1,68 @@
+{% extends "layout_profile.html" %}
+
+{% block content %}
+
+    <div class="container-fluid">
+        <div class="row card-columns">
+            <div class="card bg-primary mx-4">
+                <div class="card-header">Instructions:</div>
+                <div class="card-body">
+                    <p class="card-text">
+                        To manually overwrite and delete a comment, simply click on the red
+                        <span class="oi oi-x"></span> next to the comment you wish to delete.
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div class="container-fluid">
+            <div class="row mt-3">
+                <div class="col table-responsive">
+                    <table id="delete" class="table-hover order-column" cellspacing="0" width="100%">
+                        <thead>
+                        <tr>
+                            <th></th>
+                            <th>Comment Body</th>
+                            <th>Karma</th>
+                            <th>User Name</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {% for item in output %}
+                            <tr>
+                                <td>
+                                    <a href="?delete={{ item.0 }}&user_name={{ item.3 }}">
+                                        <button class="btn btn-danger"><span class="oi oi-x"></span></button>
+                                    </a>
+                                </td>
+                                <td>{{ item.1 }}</td>
+                                <td>{{ item.2 }}</td>
+                                <td>{{ item.3 }}</td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <p class="small mt-2">
+                NOTE: List data is cached in the database for ten minutes. If you cannot see one of your comments, it's
+                probably because the cache hasn't expired yet. Please wait at least ten minutes before emailing me.
+            </p>
+        </div>
+    </div>
+
+{% endblock %}
+
+{% block scripts %}
+
+    {% load staticfiles %}
+    <script type="text/javascript"
+            src="https://cdn.datatables.net/v/bs4/dt-1.10.16/b-1.5.1/b-colvis-1.5.1/fh-3.1.3/r-2.2.1/datatables.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            $('#delete').DataTable({
+                responsive: true
+            });
+        });
+    </script>
+
+{% endblock %}

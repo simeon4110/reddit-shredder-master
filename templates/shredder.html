@@ -1,0 +1,38 @@
+﻿{% extends "layout.html" %}
+
+{% block content %}
+
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col">
+                <p class="lead">
+                    This initial implementation of the Reddit shredder works with OAuth access. In order
+                    to use it, you must first give the app access to your Reddit account. This access can
+                    be revoked manually <a href="https://www.reddit.com/prefs/apps/">here</a>, and gives access
+                    to your identity and posts/comments. Mod related info is not accessible via this token. If you
+                    don't want to give me access, please visit the github link on the
+                    <a href="{% url 'home' %}">Home Page</a>.
+                </p>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col" style="text-align: center">
+                <p class="lead">
+                    <strong>Please Authorize the Shredder to Continue:</strong>
+                </p>
+                <div class="col">
+                    <p><a class="btn btn-primary" href="{{ auth }}">Authorize the Shredder &raquo;</a></p>
+                </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+
+    {% load staticfiles %}
+
+{% endblock %}
+
+

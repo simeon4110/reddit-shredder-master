@@ -1,0 +1,78 @@
+{% extends "layout_profile.html" %}
+
+{% block content %}
+    <div class="container-fluid">
+        <div class="row card-columns">
+            <div class="card bg-primary mx-4">
+                <div class="card-header">Instructions:</div>
+                <div class="card-body">
+                    <p class="card-text">
+                        To add an item to your list of exclusions click the plus symbol next to the item you wish to
+                        add.<br/>
+                        To remove an item from your list of exclusions click the minus symbol next to the item you wish
+                        to remove.<br/>
+                        To sort the list, click the column header that you would like to sort by.
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div class="container-fluid">
+            <div class="row mt-3">
+                <div class="col table-responsive">
+                    <table id="exclude" class="table-hover order-column" cellspacing="0" width="100%">
+                        <thead>
+                        <tr>
+                            <th></th>
+                            <th>Comment Body / Post Title</th>
+                            <th>Karma</th>
+                            <th>User Name</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {% for item in output %}
+                            <tr>
+                                {% if item.0 in excluded %}
+                                    <td>
+                                        <a href="?unset={{ item.0 }}">
+                                            <button class="btn btn-danger"><span class="oi oi-minus"></span></button>
+                                        </a>
+                                    </td>
+                                {% else %}
+                                    <td>
+                                        <a href="?set={{ item.0 }}">
+                                            <button class="btn btn-success"><span class="oi oi-plus"></span></button>
+                                        </a>
+                                    </td>
+                                {% endif %}
+                                <td style="vertical-align: middle">{{ item.1 }}</td>
+                                <td style="vertical-align: middle">{{ item.2 }}</td>
+                                <td style="vertical-align: middle">{{ item.3 }}</td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <p class="small mt-2">
+                NOTE: List data is cached in the database for ten minutes. If you cannot see one of your comments, it's
+                probably because the cache hasn't expired yet. Please wait at least ten minutes before emailing me.
+            </p>
+        </div>
+    </div>
+{% endblock %}
+
+{% block scripts %}
+
+    {% load staticfiles %}
+    <script type="text/javascript"
+            src="https://cdn.datatables.net/v/bs4/dt-1.10.16/b-1.5.1/b-colvis-1.5.1/fh-3.1.3/r-2.2.1/datatables.min.js">
+    </script>
+    <script>
+        $(document).ready(function () {
+            $('#exclude').DataTable({
+                responsive: true
+            });
+        });
+    </script>
+
+{% endblock %}

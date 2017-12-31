@@ -1,0 +1,102 @@
+{% extends "layout.html" %}
+
+{% block content %}
+
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col">
+                <p class="lead">
+                    This page is a log of all the changes made to the shredder since Dec 25, 2017.
+                </p>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col">
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Change</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr>
+                            <td>Dec 30, 2017</td>
+                            <td>
+                                Removed unneeded cache clearing from exclusions.
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Dec 30, 2017</td>
+                            <td>
+                                Added custom error handling to take care of Reddit API authorization errors, and errors
+                                related to remote problems (i.e. issues on Reddit's end.)
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Dec 30, 2017</td>
+                            <td>
+                                Fixed sessions issues, added manual session purging, ensure sessions are purged on
+                                browser close.
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Dec 30, 2017</td>
+                            <td>Total reformat of shredder page to provide clarity of use and instructions.</td>
+                        </tr>
+                        <tr>
+                            <td>Dec 30, 2017</td>
+                            <td>Added a number of recommendations from an anonymous user.</td>
+                        </tr>
+                        <tr>
+                            <td>Dec 30, 2017</td>
+                            <td>Added explicit daily full purge of cache DB.</td>
+                        </tr>
+                        <tr>
+                            <td>Dec 30, 2017</td>
+                            <td>Rewrite of cache purging done.</td>
+                        </tr>
+                        <tr>
+                            <td>Dec 30, 2017</td>
+                            <td>Added Karma to manual exclusions and deletions.</td>
+                        </tr>
+                        <tr>
+                            <td>Dec 30, 2017</td>
+                            <td>Added this page.</td>
+                        </tr>
+                        <tr>
+                            <td>Dec 30, 2017</td>
+                            <td>Added logging to reddit_connection module.</td>
+                        </tr>
+                        <tr>
+                            <td>Dec 30, 2017</td>
+                            <td>Fixed API token validation errors, added a logic gate to prevent invalid tokens from
+                                breaking the auto shredder.
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Dec 28, 2017</td>
+                            <td>Updated all DataTables to be responsive.</td>
+                        </tr>
+                        <tr>
+                            <td>Dec 26, 2017</td>
+                            <td>Added labels to forms for a better experience for those who use screen readers.</td>
+                        </tr>
+                        <tr>
+                            <td>Dec 25, 2017</td>
+                            <td>All shredder logic has been verified and implemented.</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+{% endblock %}
+{% block scripts %}
+
+    {% load staticfiles %}
+
+{% endblock %}

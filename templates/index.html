@@ -1,0 +1,113 @@
+{% extends "layout.html" %}
+
+{% block content %}
+    <div class="container">
+        <div class="row">
+            <div class="jumbotron">
+                <h1 class="display-3">Online Reddit Shredder</h1>
+                <hr class="my-4" style="border-color: white"/>
+                <p class="lead px-4">
+                    This online Reddit account shredder is designed for ease of use. With this app you can wipe your
+                    whole Reddit account-overwriting your comments so they cannot be recovered-in a single click. Or,
+                    you can register for an account and set up an automatic shredding schedule. This simple WebApp is
+                    built with Django 2.0 and Bootstrap 4.0.
+                </p>
+                <p class="px-4">
+                    <a href="/shredder">
+                        <button class="btn btn-primary">Shred Reddit Account &raquo;</button>
+                    </a>
+                    <a href="/signup">
+                        <button class="btn btn-primary ml-2">Sign Up &raquo;</button>
+                    </a>
+                </p>
+            </div>
+        </div>
+    </div>
+    <div class="container-fluid">
+        <div class="row card-columns">
+            <div class="col">
+                <div class="card bg-primary mr-2">
+                    <div class="card-header" style="text-align: center">Support for Multiple Accounts</div>
+                    <div class="card-body">
+                        <p class="card-text">
+                            The Online Reddit Shredder (ORS) now supports the ability to shred multiple Reddit accounts
+                            at once. Each Reddit account can have its own auto-shred schedule. You can add as many
+                            different Reddit accounts as you like.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card bg-primary mr-2">
+                    <div class="card-header" style="text-align: center">Guaranteed Privacy</div>
+                    <div class="card-body">
+                        <p class="card-text">
+                            You can choose whether or not the auto shredder stores any logs for your account. If you
+                            choose to keep some of your logs, they are automatically purged every 24 hours. I can not
+                            respond to subpoenas, as there is no data to turn over.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card bg-primary mr-2">
+                    <div class="card-header" style="text-align: center">Manual Exclusions and Karma Limits</div>
+                    <div class="card-body">
+                        <p class="card-text">
+                            Want to keep some of your posts? You can set a Karma threshold to limit which posts the
+                            shredder deletes. You can also use the Manual Saves page to choose which posts and comments
+                            you want to save.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="container mt-4">
+        <div class="row justify-content-md-center">
+            <div class="col col-md-6" style="border-right: 1px solid white">
+                <h4 class="display-6">Downloadable Version: </h4>
+                <p style="font-size: 16px">
+                    <strong>Don't trust me with your OAuth credentials?</strong> I also maintain a version of this
+                    script that runs in a private python environment. You will need some basic knowledge of python
+                    virtual environments and python formatting to edit the script. Click the link below to view the
+                    code.<br/>
+                    <a href="https://github.com/simeon4110/reddit_shredder">
+                        <button class="btn btn-primary mt-3">Github &raquo;</button>
+                    </a>
+                </p>
+            </div>
+            <div class="col col-md-6">
+                <h4 class="display-6">Active Development: </h4>
+                <p style="font-size: 16px">
+                    This project is under active development and things may not work as expected. If you have any issues
+                    email me at <a href="mailto:josh@joshharkema.com">josh@joshharkema.com.</a> I also accept feature
+                    requests. If you have an idea send it to me, I may add it to the app.<br/>
+                    This app is free to use and ad free. To contribute to the project send me an email and I'll add
+                    you to the private repo.
+                </p>
+            </div>
+        </div>
+    </div>
+    <hr class="my-4" style="border-color: white"/>
+    <div class="container mt-3">
+        <div class="row">
+            <div class="col mx-4" style="text-align: center">
+                <h4 class="display-6">The Shredder</h4>
+                <p class="lead">
+                    You must first authorize this app with Reddit. Click "Authorize the Shredder" below. You will be
+                    redirected to Reddit, after you click "allow" you will be redirected to the shredder where you
+                    can specify your preferences. You do not need to register to use the shredder, you can simply click
+                    "Authorize the Shredder," shred your account and leave.<br/>
+                    <a href="/shredder">
+                        <button class="btn btn-primary mt-3" href="/shredder">Authorize the Shredder &raquo;</button>
+                    </a>
+                </p>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block scripts %}
+
+{% endblock %}

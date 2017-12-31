@@ -1,0 +1,56 @@
+{% extends "layout.html" %}
+
+{% block content %}
+    <div class="container-fluid">
+        <div class="row card-columns">
+            <div class="card bg-danger mx-4">
+                <div class="card-header">Important Notes:</div>
+                <div class="card-body">
+                    <p class="card-text">
+                        To delete <strong>everything</strong> enter -24 (i.e. negative 24) into "Hours to Keep."<br/>
+                        The shredder may seem unresponsive, please wait up to 60 seconds without reloading the page, it
+                        can take awhile to shred an account with tonnes of comments and submissions.
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div class="row card-columns">
+            <div class="card bg-primary mx-4">
+                <div class="card-header">Instructions:</div>
+                <div class="card-body">
+                    <p class="card-text">
+                        To save some of your posts (i.e. the last day's worth of posts and comments) enter the number
+                        of hours you'd like to exclude below. For example, to save one full days worth of posts enter
+                        "24" to save a week's worth enter "168."
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div class="row justify-content-md-center">
+            <div class="col-md-3 col-centered">
+                <form action="shred/" method="post" class="form-horizontal">
+                    {% csrf_token %}
+                    <div class="form-group">
+                        <label for="id_shredder" class="control-label mt-3">Hours to Keep: </label>
+                        {{ form.keep }}
+                        <input type="submit" value="Shredd My Account &raquo;" class="btn btn-primary mt-3"/>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <div class="row justify-content-md-center">
+            <div class="col-md-12 mt-3">
+                <h4 class="display-5" style="color: red; text-align: center">
+                    THERE IS NO WAY TO STOP THIS PROCESS ONCE IT STARTS, DO NOT CLICK THE BUTTON UNLESS YOU ARE SURE YOU
+                    WANT TO DELETE ALL YOUR POSTS AND SUBS!!!!
+                </h4>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+{% block scripts %}
+
+    {% load staticfiles %}
+    <script src="{% static 'scripts/jquery.validate.min.js' %}"></script>
+
+{% endblock %}

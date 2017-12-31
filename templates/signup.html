@@ -1,0 +1,67 @@
+﻿{% extends "layout.html" %}
+
+{% block content %}
+    <div class="container-fluid">
+    <div class="row">
+        <div class="col">
+            <p class="lead">
+                Enter your details below. I will not sell, trade, or otherwise transmit your data. But, as
+                this app is in alpha and not a lot of testing has been done on the database security, I wouldn't
+                use any credentials shared with other sites.
+            </p>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-6">
+            <h4 class="display-6">Create an Account:</h4>
+            <form action="." method="post" class="form mx-3">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label for="id_username" class="control-label">User name:</label>
+                    {{ form.username }}
+                </div>
+                <div class="form-group">
+                    <label for="id_email" class="control-label">Email:</label>
+                    {{ form.email }}
+                </div>
+                <div class="form-group">
+                    <label for="id_password2" class="control-label">Password:</label>
+                    {{ form.password1 }}
+                </div>
+                <div class="form-group">
+                    <label for="id_password1" class="control-label">Confirm:</label>
+                    {{ form.password2 }}
+                </div>
+                <div class="form-group">
+                    <input type="hidden" name="next" value="/profile"/>
+                    <input type="submit" value="Register &raquo;" class="btn btn-primary"/>
+                </div>
+            </form>
+        </div>
+        <div class="col-md-6">
+            <h4 class="display-6 mb-3">Donate:</h4>
+            <p style="font-size: 16px">
+                Want to support this project? Consider making a donation!
+            </p>
+            <p>Bitcoin (BTC): <a href="bitcoin:1NGacpNa8ysrYgyfBC3rzRP7dKFBWuHZQ8">
+                1NGacpNa8ysrYgyfBC3rzRP7dKFBWuHZQ8</a></p>
+            <p>Ethereum (ETH): <a href="ethereum:0x5523D17695b5367367697Bebf2AB14aA985fD98A">
+                0x5523D17695b5367367697Bebf2AB14aA985fD98A</a></p>
+            <p>Litecoin (LTC): <a href="litecoin:LgF5yAoQUtxxCTZijidH9fkX4UcNELzddY">
+                LgF5yAoQUtxxCTZijidH9fkX4UcNELzddY</a></p>
+            <p style="font-size: 16px">
+                All donations are greatly appreciated, and will go to support the hosting costs this project
+                incurs.
+            </p>
+        </div>
+    </div>
+    </div>
+
+{% endblock %}
+
+{% block scripts %}
+
+    {% load staticfiles %}
+    <script src="{% static 'scripts/jquery.validate.min.js' %}"></script>
+
+{% endblock %}
