@@ -106,8 +106,6 @@ def schedule_shredder(account):
 
     :return: Nothing, writes directly to DB.
     """
-    # Verify all available tokens are valid.
-    check_tokens()
 
     # Set the time delay, if time is None time = None.
     if account[1] != "None":
@@ -203,6 +201,9 @@ def run_shredder():
     :return: Nothing.
     """
     procs = []
+
+    # Verify all available tokens are valid.
+    check_tokens()
 
     # Init proc for each account in the DB.
     for account in RedditAccounts.objects.values_list('user_id',
