@@ -38,6 +38,9 @@
             <li class="nav-item {% if request.resolver_match.url_name == "changelog" %}active{% endif %}">
                 <a class="nav-link" href="/changelog">Changelog</a>
             </li>
+            <li class="nav-item">
+                <a class="nav-link" href="https://github.com/simeon4110/reddit-shredder-master/issues">Report a Bug</a>
+            </li>
             {% if user.is_authenticated %}
                 <li class="nav-item dropdown {% if request.resolver_match.url_name == "profile" %}active{% endif %}">
                     <a class="nav-link dropdown-toggle" href="/profile" id="dropdown01" data-toggle="dropdown"
