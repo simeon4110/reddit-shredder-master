@@ -6,6 +6,8 @@ from datetime import datetime
 
 import django.contrib.auth.views
 from django.conf.urls import url
+from django.contrib.sitemaps.views import sitemap
+from django.urls import path
 
 import app.views
 from app.reddit_connection import reddit_schedule
@@ -16,7 +18,9 @@ from app.reddit_connection import reddit_schedule
 # admin.autodiscover()
 
 urlpatterns = [
-    # Examples:
+    path('sitemap.xml', sitemap, {'sitemaps': sitemaps},
+         name='django.contrib.sitemaps.views.sitemap'),
+    url(r'^robots\.txt', include('robots.urls')),
     url(r'^$', app.views.home, name='home'),
     url(r'^signup/$', app.views.signup, name='signup'),
     url(r'^authorize_callback/$', app.views.authorize_callback,
