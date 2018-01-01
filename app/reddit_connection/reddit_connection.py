@@ -28,7 +28,7 @@ reddit = praw.Reddit(client_id=CLIENT_ID,
 
 
 @exception(logger)
-def delete_comment(id, token):
+def delete_comment(id, token, item_type):
     """
     Deletes a specific comment.
 
@@ -41,10 +41,20 @@ def delete_comment(id, token):
                                  user_agent=USER_AGENT
                                  )
 
-    comment = reddit_refresh.comment(id)
-    comment.edit(string_generator())
-    comment.delete()
-    message = "Great Success! Comment overwritten and deleted!"
+    if item_type == "Submission":
+        submission = reddit_refresh.submission(id)
+        submission.delete()
+        message = "Great Success! Submission deleted!"
+
+    elif item_type == "Comment":
+        comment = reddit_refresh.comment(id)
+        comment.edit(string_generator())
+        comment.delete()
+        message = "Great Success! Comment overwritten and deleted!"
+
+    else:
+        message = "Not sure what happened."
+
     return message
 
 

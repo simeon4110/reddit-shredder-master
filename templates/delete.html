@@ -17,8 +17,9 @@
         <div class="container-fluid">
             <div class="row mt-3">
                 <div class="col table-responsive">
-                    <table id="delete" class="table-hover order-column" cellspacing="0" width="100%">
-                        <thead>
+                    {% csrf_token %}
+                    <table id="delete" class="table-hover order-column" cellspacing="0" cellpadding="0" width="100%">
+                        <thead class="mt-2">
                         <tr>
                             <th></th>
                             <th>Comment Body</th>
@@ -26,41 +27,48 @@
                             <th>User Name</th>
                         </tr>
                         </thead>
-                        <tbody>
-                        {% for item in output %}
-                            <tr>
-                                <td>
-                                    <a href="?delete={{ item.0 }}&user_name={{ item.3 }}">
-                                        <button class="btn btn-danger"><span class="oi oi-x"></span></button>
-                                    </a>
-                                </td>
-                                <td>{{ item.1 }}</td>
-                                <td>{{ item.2 }}</td>
-                                <td>{{ item.3 }}</td>
-                            </tr>
-                        {% endfor %}
-                        </tbody>
                     </table>
                 </div>
             </div>
-            <p class="small mt-2">
-                NOTE: List data is cached in the database for ten minutes. If you cannot see one of your comments, it's
-                probably because the cache hasn't expired yet. Please wait at least ten minutes before emailing me.
-            </p>
         </div>
     </div>
 
 {% endblock %}
-
 {% block scripts %}
 
     {% load staticfiles %}
-    <script type="text/javascript"
-            src="https://cdn.datatables.net/v/bs4/dt-1.10.16/b-1.5.1/b-colvis-1.5.1/fh-3.1.3/r-2.2.1/datatables.min.js"></script>
+    <script type="text/javascript" src="https://cdn.datatables.net/v/bs4/jq-3.2.1/dt-1.10.16/r-2.2.1/datatables.min.js">
+    </script>
     <script>
+        /* Function to pull reddit API data via internal API request, request must be passed by authed user */
         $(document).ready(function () {
             $('#delete').DataTable({
-                responsive: true
+                'autoWidth': true,
+                'responsive': true,
+                'processing': true,
+                /* Adds the slick gear animation */
+                'language': {
+                    processing: '<i class="fa fa-gear fa-spin fa-3x fa-fw"></i><span class="sr-only bg-primary"></span> '
+                },
+                'cache': true,
+                'ajax': {
+                    'url': '{% url 'reddit_api_json' %}',
+                    'dataSrc': ''
+                },
+                'columns': [
+                    {
+                        "data": "cid",
+                        /* Creates the links for the POST delete */
+                        "fnCreatedCell": function (nTd, sData, oData, iRow, iCol) {
+                            $(nTd).html("<a href='?delete=" + oData.cid + "&user_name=" + oData.user_name + "&item_type=" + oData.item_type + "'>"
+                                + "<button class='btn btn-danger'>"
+                                + "<span class='oi oi-x'></span></button></a>");
+                        }
+                    },
+                    {"data": "body"},
+                    {"data": "karma"},
+                    {"data": "user_name"}
+                ]
             });
         });
     </script>

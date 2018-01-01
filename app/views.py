@@ -8,7 +8,7 @@ from django.contrib import messages
 from django.contrib.auth import login, authenticate
 from django.contrib.auth.decorators import login_required
 from django.core.cache import cache
-from django.http import HttpRequest
+from django.http import HttpRequest, JsonResponse
 from django.shortcuts import render, redirect
 
 from app.forms import *
@@ -487,47 +487,29 @@ def delete(request):
         messages.warning(request, "You must log in to access this page.")
         return redirect('/login/')
 
-    # Get the session key to query to DB cache.
-    key = request.session.session_key
-
+    # Catch get requests for the delete.
     if request.GET.get('delete') is not None:
         comment = request.GET.get('delete')
         user_name = request.GET.get('user_name')
+        item_type = request.GET.get('item_type')
+
+        # Get the token associated with the Reddit username.
         token = RedditAccounts.objects.filter(
             reddit_user_name=user_name).values_list('reddit_token', flat=True)
-        message = delete_comment(comment, token)
+
+        # Delete the comment / sub.
+        message = delete_comment(comment, token, item_type)
+
+        # Display the message from the delete function.
         messages.success(request, message)
 
-        # Clear the cache.
-        if cache.get(key + "_comments") is not None:
-            cache.delete(key + "_comments")
-
         return redirect('/profile/delete/')
-
-    # Get a DB object of all the user's available Reddit accounts.
-    accounts = RedditAccounts.objects.filter(user_id=user.id)
-
-    # If the cache exists, populate the item_list with it.
-    if cache.get(key + "_comments") is not None:
-        item_list = cache.get(key + "_comments")
-
-    # Otherwise, populate the list via the Reddit API.
-    else:
-        # Put all the comments and subs into the same list.
-        item_list = []
-        for account in accounts:
-            for comment in get_comments(account.reddit_token):
-                item_list.append(
-                    (comment.id, comment.body, comment.score,
-                     account.reddit_user_name))
-        cache.set(key + '_comments', item_list, 600)
 
     return render(
         request,
         'delete.html',
         {
             'title': 'Manual Comment Deletion',
-            'output': item_list,
             'year': datetime.datetime.now().year,
         }
     )
@@ -590,3 +572,55 @@ def authorize_callback(request):
         request.session['token'] = get_token(request.GET.get('code'))
 
         return redirect('shredder')
+
+
+@login_required
+@exception(logger)
+def get_json_reddit(request):
+    """
+    Queries Reddit API and returns an array. This is used to allow for AJAX
+    loading on the API requests.
+
+    :param request: The HTTP request.
+    :return: JsonResponse of the API query.
+    """
+    assert isinstance(request, HttpRequest)
+
+    user = request.user
+
+    # Get all of the user's reddit accounts.
+    accounts = RedditAccounts.objects.filter(user_id=user.id).values_list(
+        'reddit_token', flat=True)
+
+    # Init an empty object to hold the data.
+    data = []
+
+    # Iterate through all accounts.
+    for account in accounts:
+        # Get user_name as a string, this makes it possible to append it to
+        # a dict key.
+        user_name = str(get_reddit_username(account))
+
+        # Get all the comments and append them to the list.
+        for comment in get_comments(account):
+            temp_data = {
+                'cid': comment.id,
+                'body': comment.body,
+                'karma': comment.score,
+                'user_name': user_name,
+                'item_type': "Comment",
+            }
+            data.append(temp_data)
+
+        # Get all the submission and append them to the list.
+        for submission in get_submissions(account):
+            temp_data = {
+                'cid': submission.id,
+                'body': submission.title,
+                'karma': submission.score,
+                'user_name': user_name,
+                'item_type': "Submission",
+            }
+            data.append(temp_data)
+
+    return JsonResponse(data, safe=False)

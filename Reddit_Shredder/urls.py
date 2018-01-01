@@ -20,6 +20,8 @@ urlpatterns = [
     url(r'^signup/$', app.views.signup, name='signup'),
     url(r'^authorize_callback/$', app.views.authorize_callback,
         name='authorize_callback'),
+    url(r'^reddit_api_json/$', app.views.get_json_reddit,
+        name='reddit_api_json'),
     url(r'^shredder/output/$', app.views.shredder_function, name='output'),
     url(r'^shredder/$', app.views.shredder, name='shredder'),
     url(r'^shredder/shred/$', app.views.shredder_function, name='shred'),
