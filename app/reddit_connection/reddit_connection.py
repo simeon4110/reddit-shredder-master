@@ -10,6 +10,8 @@ from datetime import timezone
 
 import praw
 import pytz
+from django.contrib.auth.decorators import login_required
+from django.http import JsonResponse, HttpRequest
 from django.utils.timezone import timedelta
 
 from Reddit_Shredder.settings import CLIENT_ID
@@ -18,6 +20,7 @@ from Reddit_Shredder.settings import REDIRECT_URI
 from Reddit_Shredder.settings import USER_AGENT
 from app.logger.exception_decor import exception
 from app.logger.exception_logger import logger
+from app.models import RedditAccounts
 
 # Initialize Reddit object for non-authenticated functions.
 reddit = praw.Reddit(client_id=CLIENT_ID,
@@ -28,12 +31,15 @@ reddit = praw.Reddit(client_id=CLIENT_ID,
 
 
 @exception(logger)
-def delete_comment(id, token, item_type):
+def delete_comment(cid, token, item_type):
     """
-    Deletes a specific comment.
+    Manual deletion of a specific comment or sub. Comments are overwritten,
+    submissions are not.
 
-    :param id: The comment ID.
-    :return: Output from request.
+    :param id: The comment or submission ID.
+    :param token: The user's saved refresh token.
+    :param item_type: Comment / Submission
+    :return: A success / error message. Depending on the result.
     """
     reddit_refresh = praw.Reddit(client_id=CLIENT_ID,
                                  client_secret=CLIENT_SECRET,
@@ -41,21 +47,168 @@ def delete_comment(id, token, item_type):
                                  user_agent=USER_AGENT
                                  )
 
+    # Catch and delete submission types.
     if item_type == "Submission":
-        submission = reddit_refresh.submission(id)
+        submission = reddit_refresh.submission(cid)
         submission.delete()
         message = "Great Success! Submission deleted!"
 
+    # Catch and delete comment types.
     elif item_type == "Comment":
-        comment = reddit_refresh.comment(id)
+        comment = reddit_refresh.comment(cid)
         comment.edit(string_generator())
         comment.delete()
         message = "Great Success! Comment overwritten and deleted!"
 
+    # Otherwise, return an error.
+    # :TODO: Better error handling.
     else:
         message = "Not sure what happened."
 
     return message
+
+
+@login_required
+@exception(logger)
+def get_json_reddit(request):
+    """
+    Queries Reddit API and returns an array. This is used to allow for AJAX
+    loading on the API requests.
+
+    :param request: The HTTP request.
+    :return: JsonResponse of the API query (includes all of the user's comments
+    and submissions for every account they have authorized.)
+    """
+    assert isinstance(request, HttpRequest)
+
+    user = request.user
+
+    # Get all of the user's reddit accounts.
+    accounts = RedditAccounts.objects.filter(user_id=user.id).values_list(
+        'reddit_token', flat=True)
+
+    # Init an empty object to hold the data.
+    data = []
+
+    # Iterate through all accounts.
+    for account in accounts:
+        # Get user_name as a string, this makes it possible to append it to
+        # a dict key.
+        user_name = str(get_reddit_username(account))
+
+        # Get all the comments and append them to the list.
+        for comment in get_comments(account):
+            temp_data = {
+                'cid': comment.id,
+                'body': comment.body,
+                'karma': comment.score,
+                'user_name': user_name,
+                'item_type': "Comment",
+            }
+            data.append(temp_data)
+
+        # Get all the submission and append them to the list.
+        for submission in get_submissions(account):
+            temp_data = {
+                'cid': submission.id,
+                'body': submission.title,
+                'karma': submission.score,
+                'user_name': user_name,
+                'item_type': "Submission",
+            }
+            data.append(temp_data)
+
+    return JsonResponse(data, safe=False)
+
+
+@exception(logger)
+def run_shredder(request):
+    """
+
+    :param request:
+    :return:
+    """
+    assert isinstance(request, HttpRequest)
+
+    user = request.user
+
+    # Get the token from the user's account if the user is authorized.
+    if user.is_authenticated:
+        if request.POST.get('account'):
+            account = request.POST.get('account')
+            account_object = RedditAccounts.objects.get(reddit_user_name=account)
+            token = account_object.reddit_token
+
+    # Otherwise, get the token from the session store.
+    elif request.session['token']:
+        token = request.session['token']
+
+    # If none of these options exist, raise an error.
+    else:
+        raise Exception
+
+    # Get the other request data needed.
+    keep = int(request.POST.get('keep'))
+    karma_limit = int(request.POST.get('karma_limit'))
+
+    # stores the output from the shredding process.
+    output = []
+
+    # overwrites and deletes a user's comments.
+    for comment in get_comments(token):
+        # Get the comment creation time.
+        time = datetime.datetime.fromtimestamp(comment.created)
+        time = time.replace(tzinfo=pytz.utc)
+
+        # this overwrites the comment, saves it and deletes it
+        if time < delta_now(keep) and comment.score < karma_limit:
+            temp_data = {
+                'cid': comment.id,
+                'body': comment.body,
+                'status': 'DELETED',
+            }
+            comment.edit(string_generator())
+            comment.delete()
+            output.append(temp_data)
+
+        # skip the comment
+        else:
+            temp_data = {
+                'cid': comment.id,
+                'body': comment.body,
+                'status': 'SKIPPED',
+            }
+            output.append(temp_data)
+
+    # deletes a user's subs.
+    for submission in get_submissions(token):
+        # Get the submission creation time.
+        time = datetime.datetime.fromtimestamp(submission.created)
+        time = time.replace(tzinfo=pytz.utc)
+
+        # delete the submission
+        if time < delta_now(keep) and submission.score < karma_limit:
+            temp_data = {
+                'cid': submission.id,
+                'body': submission.title,
+                'status': 'DELETED',
+            }
+            submission.delete()
+            output.append(temp_data)
+
+        # skip the submission
+        else:
+            temp_data = {
+                'cid': submission.id,
+                'body': submission.title,
+                'status': 'SKIPPED',
+            }
+            output.append(temp_data)
+
+    if not output:
+        raise Exception
+
+    return JsonResponse(output, safe=False)
 
 
 @exception(logger)
@@ -154,120 +307,3 @@ def delta_now(time):
     delta = datetime.datetime.now(timezone.utc) - timedelta(hours=time)
     return delta
 
-
-class RedditConnection:
-    """
-    Class to handle the authenticated connection to Reddit.
-    """
-
-    def __init__(self, code, state, time, token):
-        """
-        Initialize all the needed data.
-
-        :param code: The code returned from the Reddit API.
-        :param state: The state generated with uuid4 (generated by
-                      get_auth_url.
-        :param time:  The time delay for saved posts (if set).
-        :param token: The saved refresh token (if one exists).
-        """
-        self.time = time
-        self.code = code
-        self.state = state
-        self.token = token
-
-        # get token if this is the first run
-        if self.token is None:
-            self.token = get_token(self.code)
-
-        # otherwise use the token saved in the session / profile
-        else:
-            self.token = token
-
-    def return_token(self):
-        """
-        :return: The token saved in this object.
-        """
-        return self.token
-
-    def get_data(self, user=False, comments=False, submissions=False):
-        """
-        Gets the data from the Reddit API via an authenticated praw.reddit
-        object. This is used to keep the session open and reduce API calls.
-
-        :param user: If True, return username.
-        :param comments: If True, return comments.
-        :param submissions: If True, return submissions.
-        :return: Depends on which flag is set.
-        """
-
-        reddit_refresh = praw.Reddit(client_id=CLIENT_ID,
-                                     client_secret=CLIENT_SECRET,
-                                     refresh_token=self.token,
-                                     user_agent=USER_AGENT
-                                     )
-
-        if user is True:
-            return reddit_refresh.user.me()
-
-        if comments is True:
-            return reddit_refresh.user.me().comments.new(limit=None)
-
-        if submissions is True:
-            return reddit_refresh.user.me().submissions.new(limit=None)
-
-    def shredder(self):
-        """
-        Shredder Actual - deletes a users posts and submissions based off
-        the parameters passed in the __init__ section.
-
-        :return: Output from the shredder, detailing which posts are deleted
-                 or skipped.
-        """
-        # stores the output from the shredding process.
-        output = []
-        skipped_count = 0
-        deleted_count = 0
-
-        # overwrites and deletes a user's comments.
-        for comment in self.get_data(comments=True):
-
-            # Get the comment creation time.
-            time = datetime.datetime.fromtimestamp(comment.created)
-            time = time.replace(tzinfo=pytz.utc)
-
-            # this overwrites the comment, saves it and deletes it
-            if time < delta_now(self.time):
-                comment_before = comment.body
-                comment.edit(string_generator())
-                data = comment.id, comment_before, "DELETED"
-                output.append(data)
-                deleted_count += 1
-                comment.delete()
-
-            # skip the comment
-            else:
-                data = comment.id, comment.body, "SKIPPED"
-                skipped_count += 1
-                output.append(data)
-
-        # deletes a user's subs.
-        for submission in self.get_data(submissions=True):
-            # Get the submission creation time.
-            time = datetime.datetime.fromtimestamp(submission.created)
-            time = time.replace(tzinfo=pytz.utc)
-
-            # delete the submission
-            if time < delta_now(self.time):
-                data = submission.id, submission.title, "DELETED"
-                output.append(data)
-                deleted_count += 1
-                submission.delete()
-
-            # skip the submission
-            else:
-                data = submission.id, submission.title, "SKIPPED"
-                skipped_count += 1
-                output.append(data)
-
-        # returns the output
-        return output, skipped_count, deleted_count

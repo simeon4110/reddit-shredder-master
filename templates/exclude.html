@@ -19,7 +19,7 @@
         <div class="container-fluid">
             <div class="row mt-3">
                 <div class="col table-responsive">
-                    <table id="exclude" class="table-hover order-column" cellspacing="0" width="100%">
+                    <table id="exclude" class="table-hover order-column" cellspacing="0" cellpadding="0" width="100%">
                         <thead>
                         <tr>
                             <th></th>
@@ -28,35 +28,9 @@
                             <th>User Name</th>
                         </tr>
                         </thead>
-                        <tbody>
-                        {% for item in output %}
-                            <tr>
-                                {% if item.0 in excluded %}
-                                    <td>
-                                        <a href="?unset={{ item.0 }}">
-                                            <button class="btn btn-danger"><span class="oi oi-minus"></span></button>
-                                        </a>
-                                    </td>
-                                {% else %}
-                                    <td>
-                                        <a href="?set={{ item.0 }}">
-                                            <button class="btn btn-success"><span class="oi oi-plus"></span></button>
-                                        </a>
-                                    </td>
-                                {% endif %}
-                                <td style="vertical-align: middle">{{ item.1 }}</td>
-                                <td style="vertical-align: middle">{{ item.2 }}</td>
-                                <td style="vertical-align: middle">{{ item.3 }}</td>
-                            </tr>
-                        {% endfor %}
-                        </tbody>
                     </table>
                 </div>
             </div>
-            <p class="small mt-2">
-                NOTE: List data is cached in the database for ten minutes. If you cannot see one of your comments, it's
-                probably because the cache hasn't expired yet. Please wait at least ten minutes before emailing me.
-            </p>
         </div>
     </div>
 {% endblock %}
@@ -68,11 +42,43 @@
             src="https://cdn.datatables.net/v/bs4/dt-1.10.16/b-1.5.1/b-colvis-1.5.1/fh-3.1.3/r-2.2.1/datatables.min.js">
     </script>
     <script>
-        $(document).ready(function () {
-            $('#exclude').DataTable({
-                responsive: true
+        var excluded = {{ excluded|safe }}
+            $(document).ready(function () {
+                $('#exclude').DataTable({
+                    'autoWidth': true,
+                    'responsive': true,
+                    'processing': true,
+                    /* Adds the slick gear animation */
+                    'language': {
+                        processing: '<i class="fa fa-gear fa-spin fa-3x fa-fw"></i><span class="sr-only bg-primary"></span> '
+                    },
+                    'cache': true,
+                    'ajax': {
+                        'url': '{% url 'reddit_api_json' %}',
+                        'dataSrc': ''
+                    },
+                    'columns': [
+                        {
+                            'data': 'cid',
+                            /* Creates the links for the set / unset POST functions */
+                            'fnCreatedCell': function (nTd, sData, oData, iRow, iCol) {
+                                if (excluded.indexOf(oData.cid) == -1) {
+                                    $(nTd).html("<a href='?set=" + oData.cid + "'>"
+                                        + "<button class='btn btn-success'>"
+                                        + "<span class='oi oi-plus'></span></button></a>");
+                                } else {
+                                    $(nTd).html("<a href='?unset=" + oData.cid + "'>"
+                                        + "<button class='btn btn-danger'>"
+                                        + "<span class='oi oi-minus'></span></button></a>");
+                                }
+                            }
+                        },
+                        {"data": "body"},
+                        {"data": "karma"},
+                        {"data": "user_name"}
+                    ]
+                });
             });
-        });
     </script>
 
 {% endblock %}

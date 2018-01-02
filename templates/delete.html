@@ -60,7 +60,8 @@
                         "data": "cid",
                         /* Creates the links for the POST delete */
                         "fnCreatedCell": function (nTd, sData, oData, iRow, iCol) {
-                            $(nTd).html("<a href='?delete=" + oData.cid + "&user_name=" + oData.user_name + "&item_type=" + oData.item_type + "'>"
+                            $(nTd).html("<a href='?delete=" + oData.cid + "&user_name=" + oData.user_name
+                                + "&item_type=" + oData.item_type + "'>"
                                 + "<button class='btn btn-danger'>"
                                 + "<span class='oi oi-x'></span></button></a>");
                         }

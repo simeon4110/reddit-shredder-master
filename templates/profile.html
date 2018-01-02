@@ -3,131 +3,122 @@
 {% block content %}
 
     <div class="container">
-        <div class="row card-columns">
-            <div class="card bg-primary mx-4">
-                <div class="card-header">Important Note:</div>
-                <div class="card-body">
-                    <p class="card-text">
-                        The Delete and Exclude pages take a few seconds to load. All the data is pulled via the Reddit
-                        API, and the delay is caused by this request.
-                    </p>
-                </div>
-            </div>
-        </div>
-    <div class="row">
-        <div class="col-md table-responsive">
-            <h4 class="pb-3">Account Details:</h4>
-            <table class="table">
-                <tr>
-                    <th scope="row">Username:</th>
-                    <td>{{ user.username }}</td>
-                </tr>
-                <tr>
-                    <th scope="row">Email:</th>
-                    <td>{{ user.email }}</td>
-                </tr>
-                <tr>
-                    <th scope="row">Karma Threshold:</th>
-                    <form action="karma_limit/" method="post" class="form-inline">
-                        {% csrf_token %}
-                        <td>
-                            Current Threshold: {{ user.profile.karma_exclude }}
-                            <div class="form-group mt-2">
-                                <label for="karma exclude" id="karma_exclude">Set Karma Threshold:</label>
-                                {{ k_form.karma_exclude }}
-                                <input type="hidden" name="next" value="/profile/karma_limit"/>
-                                <button type="submit" name="Set Threshold" class="btn btn-primary mt-2">Set Threshold
-                                    &raquo;
-                                </button>
-                            </div>
-                        </td>
-                    </form>
-                </tr>
-                <tr>
-                    <th scope="row">Record Keeping: *</th>
-                    <form action="privacy/" method="post" class="form-inline">
-                        {% csrf_token %}
-                        <td>
-                            {% if user.profile.record_keeping == False %}
-                                Current Setting: <strong>No</strong>
-                            {% endif %}
-                            {% if user.profile.record_keeping == True %}
-                                Current Setting: <strong>Yes</strong>
-                            {% endif %}
+        <div class="row">
+            <div class="col-md table-responsive">
+                <h4 class="pb-3">Account Details:</h4>
+                <table class="table">
+                    <tr>
+                        <th scope="row">Username:</th>
+                        <td>{{ user.username }}</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Email:</th>
+                        <td>{{ user.email }}</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Karma Threshold:</th>
+                        <form action="karma_limit/" method="post" class="form-inline">
+                            {% csrf_token %}
+                            <td>
+                                Current Threshold: {{ user.profile.karma_exclude }}
+                                <div class="form-group mt-2">
+                                    <label for="karma exclude" id="karma_exclude">Set Karma Threshold:</label>
+                                    {{ k_form.karma_exclude }}
+                                    <input type="hidden" name="next" value="/profile/karma_limit"/>
+                                    <button type="submit" name="Set Threshold" class="btn btn-primary mt-2">Set
+                                        Threshold
+                                        &raquo;
+                                    </button>
+                                </div>
+                            </td>
+                        </form>
+                    </tr>
+                    <tr>
+                        <th scope="row">Record Keeping: *</th>
+                        <form action="privacy/" method="post" class="form-inline">
+                            {% csrf_token %}
+                            <td>
+                                {% if user.profile.record_keeping == False %}
+                                    Current Setting: <strong>No</strong>
+                                {% endif %}
+                                {% if user.profile.record_keeping == True %}
+                                    Current Setting: <strong>Yes</strong>
+                                {% endif %}
 
-                            <div class="form-group mt-2">
-                                <label for="record_keeping" id="record_keeping">Keep Output from the Shredder?</label>
-                                {{ p_form.record_keeping }}
-                                <input type="hidden" name="next" value="/profile/privacy"/>
-                                <button type="submit" name="Set Threshold" class="btn btn-primary mt-2">Set Preference
-                                    &raquo;
-                                </button>
-                            </div>
-                        </td>
-                    </form>
-                </tr>
-                <tr>
-                    <th scope="row">Add Reddit Account:</th>
-                    <td><a href="{{ auth }}" class="btn btn-primary">Authorize &raquo;</a></td>
-                </tr>
-            </table>
-            <div class="ml-2 col-sm col-sm-offset-1">
-                <p class="small">
-                    <strong>* NOTE:</strong> Record keeping is disabled by default. To enable record keeping, toggle
-                    "Record
-                    Keeping" to "Yes" and click "Set Preference."
+                                <div class="form-group mt-2">
+                                    <label for="record_keeping" id="record_keeping">Keep Output from the
+                                        Shredder?</label>
+                                    {{ p_form.record_keeping }}
+                                    <input type="hidden" name="next" value="/profile/privacy"/>
+                                    <button type="submit" name="Set Threshold" class="btn btn-primary mt-2">Set
+                                        Preference
+                                        &raquo;
+                                    </button>
+                                </div>
+                            </td>
+                        </form>
+                    </tr>
+                    <tr>
+                        <th scope="row">Add Reddit Account:</th>
+                        <td><a href="{{ auth }}" class="btn btn-primary">Authorize &raquo;</a></td>
+                    </tr>
+                </table>
+            </div>
+            <div class="col-md">
+                <h4>FAQ:</h4>
+                <p style="font-size: 16px">
+                <p>
+                    <strong>What is my "Karma Threshold?" - </strong>This value represents the post /
+                    submissions karma you do not want to delete. (i.e. to save posts and comments with more
+                    than 50 karma, enter 50.)
+                </p>
+                <p>
+                    <strong>What's the difference between "Records / Record Keeping" and "Saved Items"? -</strong>
+                    Record Keeping allows you to keep track of which posts/comments the Shredder deleted-you can
+                    personally verify that the shredder has ran. While the "Saved Items" list shows which things are
+                    <strong>not meant</strong> to be deleted at all. <strong>Record keeping is disabled by default and
+                    the database is purged every 24 hours.</strong>
+                </p>
+                <p>
+                    <strong>How do I set up the auto shredder? - </strong>Add a Reddit account and you'll be
+                    able to set a schedule for each of your authorized accounts.
+                </p>
+                </p>
+                <hr style="border-color: white"/>
+                <h4>Donate:</h4>
+                <p style="font-size: 16px">
+                    Want to support this project? Consider making a donation!
+                <p>Bitcoin (BTC): <a href="bitcoin:1NGacpNa8ysrYgyfBC3rzRP7dKFBWuHZQ8">
+                    1NGacpNa8ysrYgyfBC3rzRP7dKFBWuHZQ8</a></p>
+                <p>Ethereum (ETH): <a href="ethereum:0x5523D17695b5367367697Bebf2AB14aA985fD98A">
+                    0x5523D17695b5367367697Bebf2AB14aA985fD98A</a></p>
+                <p>Litecoin (LTC): <a href="litecoin:LgF5yAoQUtxxCTZijidH9fkX4UcNELzddY">
+                    LgF5yAoQUtxxCTZijidH9fkX4UcNELzddY</a></p>
+                <p style="font-size: 16px">
+                    All donations are greatly appreciated, and will go to support the hosting costs this project
+                    incurs. As traffic increases, this whole project is configured to deploy on Amazon Lambda.
+                </p>
+                <p style="font-size: 16px">
+                    Once traffic has reached a level where my dual quad Xeon physical test server cannot handle the
+                    Python
+                    jobs, I will move the app onto Lambda. I suspect my home server can handle thousands of accounts,
+                    but
+                    there's no way to know without testing it.
                 </p>
             </div>
         </div>
-        <div class="col-md">
-            <h4>FAQ:</h4>
-            <p style="font-size: 16px">
-            <p>
-                <strong>What is my "Karma Threshold?" - </strong>This value represents the post /
-                submissions karma you do not want to delete. (i.e. to save posts and comments with more
-                than 50 karma, enter 50.)
-            </p>
-            <p>
-                <strong>I don't see any accounts. How do I add one? - </strong>Click "Authorize" under "Add
-                Reddit Account" on the left hand side of this page.
-            </p>
-            <p>
-                <strong>How do I set up the auto shredder? - </strong>Add a Reddit account and you'll be
-                able to set a schedule for each of your authorized accounts.
-            </p>
-            </p>
-            <hr style="border-color: white"/>
-            <h4>Donate:</h4>
-            <p style="font-size: 16px">
-                Want to support this project? Consider making a donation!
-            <p>Bitcoin (BTC): <a href="bitcoin:1NGacpNa8ysrYgyfBC3rzRP7dKFBWuHZQ8">
-                1NGacpNa8ysrYgyfBC3rzRP7dKFBWuHZQ8</a></p>
-            <p>Ethereum (ETH): <a href="ethereum:0x5523D17695b5367367697Bebf2AB14aA985fD98A">
-                0x5523D17695b5367367697Bebf2AB14aA985fD98A</a></p>
-            <p>Litecoin (LTC): <a href="litecoin:LgF5yAoQUtxxCTZijidH9fkX4UcNELzddY">
-                LgF5yAoQUtxxCTZijidH9fkX4UcNELzddY</a></p>
-            <p style="font-size: 16px">
-                All donations are greatly appreciated, and will go to support the hosting costs this project
-                incurs. As traffic increases, this whole project is configured to deploy on Amazon Lambda.
-            </p>
-            <p style="font-size: 16px">
-                Once traffic has reached a level where my dual quad Xeon physical test server cannot handle the Python
-                jobs, I will move the app onto Lambda. I suspect my home server can handle thousands of accounts, but
-                there's no way to know without testing it.
-            </p>
-        </div>
-    </div>
         <hr style="border-color: white"/>
-        <div class="col-lg table-responsive">
-            <h4>Your Authorized Reddit Accounts:</h4>
+    </div>
+    <div class="row justify-content-center pt-3">
+        <div class="col-lg-10 table-responsive">
+            <h4>Authorized Accounts and Auto-Shredder Schedules:</h4>
             <table class="table">
                 <thead>
                 <tr>
                     <th>Account Name</th>
                     <th>Authorized On</th>
-                    <th>Schedule</th>
+                    <th>Current Schedule</th>
                     <th>Change Schedule</th>
-                    <th>Shred Manually *</th>
                 </tr>
                 </thead>
                 <hr/>
@@ -148,7 +139,6 @@
                                 <form action="/profile/scheduler/" method="post">
                                     {% csrf_token %}
                                     <div class="form-group">
-                                        <label for="Pick Schedule" id="schedule">Set Schedule:</label>
                                         {{ form.schedule }}
                                         <input type="hidden" name="next" value="/profile/scheduler"/>
                                         <input type="hidden" name="object_id" value="{{ item.id }}"/>
@@ -158,29 +148,10 @@
                                     </div>
                                 </form>
                             </td>
-                            <td>
-                                <form action="/shredder/shred/" method="post">
-                                    {% csrf_token %}
-                                    <div class="form-group">
-                                        <label for="Time Delay in Hours" id="keep">Set Time Delay:</label>
-                                        {{ keep.keep }}
-                                        <input type="hidden" name="account" value="{{ item.id }}"/>
-                                        <button type="submit" name="Shred this Account" class="btn btn-primary mt-2">
-                                            Shred This Account &raquo;
-                                        </button>
-                                    </div>
-                                </form>
-                            </td>
                         </tr>
                     {% endfor %}
                     </table>
                 {% endif %}
-            <p class="small" style="text-align: center">
-                <strong>* NOTE:</strong> The manual shredder DOES NOT include your exclusions. If you want to keep
-                comments based on Karma
-                /
-                manual exclusions, you MUST use the automatic shredder.
-            </p>
         </div>
     </div>
 

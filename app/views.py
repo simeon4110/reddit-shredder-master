@@ -2,18 +2,23 @@
 Definition of views.
 """
 
-from datetime import datetime
+import datetime
+from datetime import timezone
 
 from django.contrib import messages
 from django.contrib.auth import login, authenticate
 from django.contrib.auth.decorators import login_required
-from django.core.cache import cache
-from django.http import HttpRequest, JsonResponse
+from django.http import HttpRequest
 from django.shortcuts import render, redirect
 
 from app.forms import *
+from app.logger.exception_decor import exception
+from app.logger.exception_logger import logger
 from app.models import RedditAccounts
-from app.reddit_connection.reddit_connection import *
+from app.reddit_connection.reddit_connection import delete_comment
+from app.reddit_connection.reddit_connection import get_auth_url
+from app.reddit_connection.reddit_connection import get_reddit_username
+from app.reddit_connection.reddit_connection import get_token
 
 
 def home(request):
@@ -49,15 +54,34 @@ def shredder(request):
 
     user = request.user
 
-    # Redirect authorized user's to their profile.
+    # Catch and redirect user's without tokens / accounts. Redirect to the
+    # authorize page.
+    if 'token' not in request.session and user.is_authenticated is False:
+        messages.info(request, "Hmmm, you may have done something unexpected.")
+        return render(
+            request,
+            'shredder.html',
+            {
+                'title': 'Authorize Your Account',
+                'year': datetime.datetime.now().year,
+                'auth': get_auth_url(),
+            }
+        )
+
+    # Display the account selector to authorized users.
     if user.is_authenticated:
-        messages.warning(request, "Registered users must use the manual shredder"
-                                  " under 'Your Authorized Reddit Accounts'"
-                                  " below.")
+        return render(
+            request,
+            'shredder_working.html',
+            {
+                'title': 'The Shredder',
+                'year': datetime.datetime.now().year,
+                'form': RedditShredderForm(user_id=user.id),
+            }
+        )
 
-        return redirect(profile)
-
-    # If a saved refresh token exists, redirect user to the shredder actual.
+    # Render the one-off shredder for un-registered users (they're identical, I
+    # separated them for semantic rather than programmatic reasons.)
     if 'token' in request.session:
         return render(
             request,
@@ -65,21 +89,69 @@ def shredder(request):
             {
                 'title': 'The Shredder',
                 'year': datetime.datetime.now().year,
-                'form': RedditShredderForm(),
+                'form': RedditShredderForm(user_id=None),
             }
         )
 
-    # if user is neither registered nor authorized, return the
-    # authorization page.
-    return render(
-        request,
-        'shredder.html',
-        {
-            'title': 'Authorize Your Account',
-            'year': datetime.datetime.now().year,
-            'auth': get_auth_url(),
-        }
-    )
+
+def shredder_output(request):
+    """
+    Renders the shredder output page, the actual shredding is done via an API
+    POST request to the run_shredder function in reddit_connection.py.
+
+    :param request: The HTTP request.
+    :return: Varies depending on auth state and request.method.
+    """
+    assert isinstance(request, HttpRequest)
+
+    user = request.user
+    if user.is_authenticated:
+        form = RedditShredderForm(user_id=user.id)
+    else:
+        form = RedditShredderForm(user_id=0)
+
+    messages.info(request, "This process can take a while if the account being "
+                           "shredded has a lot of comments and posts. Please "
+                           "be patient.")
+
+    # Catch non-POST calls to this page.
+    if request.method != "POST":
+        messages.warning(request, 'Whoops! Something unexpected happened.')
+        return redirect(shredder)
+
+    # If the user is authed, pass the account + other vars.
+    if user.is_authenticated:
+        account = request.POST.get('account')
+        karma_limit = request.POST.get('karma_limit')
+        time = request.POST.get('keep')
+
+        return render(
+            request,
+            'shredder_console.html',
+            {
+                'title': 'Shredder Output',
+                'year': datetime.datetime.now().year,
+                'account': account,
+                'karma_limit': karma_limit,
+                'time': time,
+            }
+        )
+
+    # If the user is not authed, pass the main vars.
+    else:
+        karma_limit = request.POST.get('karma_limit')
+        time = request.POST.get('keep')
+
+        return render(
+            request,
+            'shredder_console.html',
+            {
+                'title': 'Shredder Output',
+                'year': datetime.datetime.now().year,
+                'karma_limit': karma_limit,
+                'time': time,
+            }
+        )
 
 
 def signup(request):
@@ -151,93 +223,6 @@ def changelog(request):
         {
             'title': 'Changelog',
             'year': datetime.datetime.now().year
-        }
-    )
-
-
-@exception(logger)
-def shredder_function(request):
-    """
-    The actual shredder function.
-
-    :param request: The HTTP request object.
-    :return: The rendered page.
-    """
-    assert isinstance(request, HttpRequest)
-
-    user = request.user
-
-    # initialize the form data
-    form = RedditShredderForm(request.POST)
-
-    # get the time value from the form
-    if form.is_valid():
-        time = form.cleaned_data.get('keep')
-
-    # if the user is authenticated, retrieve token from user.Profile
-    if user.is_authenticated is True:
-        messages.warning(request, "Authorized users must use the account "
-                                  "specific shredder. Please select an account "
-                                  "below.")
-        return redirect('profile')
-
-    # Recover token from session store.
-    token = request.session['token']
-
-    # initialize an authenticated reddit connection
-    reddit_conn = RedditConnection(state=None,
-                                   code=None,
-                                   token=token,
-                                   time=time,
-                                   )
-
-    # Catch Reddit API errors.
-    try:
-        # get and display the user's username
-        user_name = reddit_conn.get_data(user=True)
-
-    except Exception as e:
-        # Catch 400 HTTP response codes, delete token, and redirect to account
-        # auth page.
-        if e.response.status_code == 400:
-            messages.warning(request, "Your account is no longer authorized."
-                                      " please authorize your account to"
-                                      " continue.")
-            request.session['token'] = None
-            return redirect('shredder')
-
-        # Catch forbidden errors and redirect to the shredder.
-        if e.response.status_code == 403:
-            messages.warning(request, "Something went wrong, please report this"
-                                      " error to josh@joshharkema.com")
-            request.session['token'] = None
-            return request('shredder')
-
-        # Catch errors on Reddit's end, and redirect.
-        if e.response.status_code == 503 or e.response.status_code == 502 or \
-                e.response.status_code == 504:
-            messages.warning(request, "Reddit is too busy to process this"
-                                      " request, please try again later.")
-            request.session['token'] = None
-            return request('shredder')
-
-    # run the shredder and retrieve the output
-    output, skipped_count, deleted_count = reddit_conn.shredder()
-
-    # Unset the session token.
-    request.session['token'] = None
-
-    # render the shredder_console page and results
-    return render(
-        request,
-        'shredder_console.html',
-        {
-            'title': 'Shredder Output',
-            'year': datetime.datetime.now().year,
-            'user_name': user_name,
-            'output': output,
-            'skipped_count': skipped_count,
-            'deleted_count': deleted_count,
         }
     )
 
@@ -401,9 +386,6 @@ def manual_exclude(request):
 
     user = request.user
 
-    # Get the session key to query to DB cache.
-    key = request.session.session_key
-
     # If the user is not logged in, redirect to the login page.
     if user.is_authenticated is False:
         messages.warning(request, "You must log in to access this page.")
@@ -427,43 +409,25 @@ def manual_exclude(request):
                                  excluded_item_id=item_id)
         messages.success(request,
                          "Great success! The item has been added to your list of"
-                         "exclusions.")
+                         " exclusions.")
         excluded.save()
         return redirect('/profile/exclude/')
 
-    # Get a DB object of all the user's available Reddit accounts.
-    accounts = RedditAccounts.objects.filter(user_id=user.id)
+    excluded = ExcludedItems.objects.filter(user_id=user.id).values_list(
+        'excluded_item_id', flat=True)
 
-    # If the cache exists, populate the item_list with it.
-    if cache.get(key + "_items") is not None:
-        item_list = cache.get(key + "_items")
-
-    # Otherwise, populate the list via the Reddit API.
-    else:
-        # Put all the comments and subs into the same list.
-        item_list = []
-        for account in accounts:
-            for comment in get_comments(account.reddit_token):
-                item_list.append(
-                    (comment.id, comment.body, comment.score,
-                     account.reddit_user_name))
-            for submission in get_submissions(account.reddit_token):
-                item_list.append(
-                    (submission.id, submission.title, submission.score,
-                     account.reddit_user_name))
-        cache.set(key + '_items', item_list, 600)
+    excluded_array = []
+    for i in excluded:
+        excluded_array.append(str(i))
 
     return render(
         request,
         'exclude.html',
         {
             'title': 'Saved Items',
-            'accounts': accounts,
             'year': datetime.datetime.now().year,
-            'output': item_list,
             'exclude': ExclusionSelector,
-            'excluded': list(ExcludedItems.objects.filter(
-                user_id=user.id).values_list('excluded_item_id', flat=True)),
+            'excluded': excluded_array,
 
         }
     )
@@ -572,55 +536,3 @@ def authorize_callback(request):
         request.session['token'] = get_token(request.GET.get('code'))
 
         return redirect('shredder')
-
-
-@login_required
-@exception(logger)
-def get_json_reddit(request):
-    """
-    Queries Reddit API and returns an array. This is used to allow for AJAX
-    loading on the API requests.
-
-    :param request: The HTTP request.
-    :return: JsonResponse of the API query.
-    """
-    assert isinstance(request, HttpRequest)
-
-    user = request.user
-
-    # Get all of the user's reddit accounts.
-    accounts = RedditAccounts.objects.filter(user_id=user.id).values_list(
-        'reddit_token', flat=True)
-
-    # Init an empty object to hold the data.
-    data = []
-
-    # Iterate through all accounts.
-    for account in accounts:
-        # Get user_name as a string, this makes it possible to append it to
-        # a dict key.
-        user_name = str(get_reddit_username(account))
-
-        # Get all the comments and append them to the list.
-        for comment in get_comments(account):
-            temp_data = {
-                'cid': comment.id,
-                'body': comment.body,
-                'karma': comment.score,
-                'user_name': user_name,
-                'item_type': "Comment",
-            }
-            data.append(temp_data)
-
-        # Get all the submission and append them to the list.
-        for submission in get_submissions(account):
-            temp_data = {
-                'cid': submission.id,
-                'body': submission.title,
-                'karma': submission.score,
-                'user_name': user_name,
-                'item_type': "Submission",
-            }
-            data.append(temp_data)
-
-    return JsonResponse(data, safe=False)

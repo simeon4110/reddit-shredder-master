@@ -26,18 +26,51 @@ class BootstrapAuthenticationForm(AuthenticationForm):
 
 class RedditShredderForm(forms.Form):
     """
-    Sets the user's preferences for the manual shredder.
+    Receives the user's preferences for the manual shredder.
     """
+
+    # The account the user wants to shred (reddit_user_name).
+    account = forms.ModelChoiceField(queryset=RedditAccounts.objects.none(),
+                                     label=_('Select an Account'),
+                                     widget=forms.Select({
+                                         'class': 'form-control',
+                                     }))
+
+    def __init__(self, user_id, *args, **kwargs):
+        """
+        Extends the ShredderForm class to allow user_name to be selected and
+        displayed dynamically in the form.
+
+        :param user_id: The user's id.
+        :param args: *
+        :param kwargs: **
+        """
+        super(RedditShredderForm, self).__init__(*args, **kwargs)
+        self.fields['account'].queryset = RedditAccounts.objects.filter(
+            user_id=user_id).values_list('reddit_user_name', flat=True)
+
+    # The time cut-off to limit the shredder.
     keep = forms.IntegerField(label=_('Time delay in hours'),
-                              widget=forms.TextInput({
+                              initial=0,
+                              widget=forms.NumberInput({
                                   'class': 'form-control',
-                                  'placeholder': 'Time Delay in Hours'}))
+                                  'placeholder': 'Time Delay in Hours'
+                              }))
+
+    # The user's karma threshold preference.
+    karma_limit = forms.IntegerField(label=_('Karma Threshold'),
+                                     initial=0,
+                                     widget=forms.NumberInput({
+                                         'class': 'form-control',
+                                         'placeholder': 'Karma Threshold',
+                                     }))
 
 
 class KarmaExcludeForm(forms.ModelForm):
     """
     Allows user's to set a Karma threshold.
     """
+
     class Meta:
         model = Profile
         fields = ['karma_exclude']
@@ -54,6 +87,7 @@ class SchedulerForm(forms.ModelForm):
     """
     Allows user's to set auto-shred schedules for their accounts.
     """
+    # Blank IntegerField to receive the comment / submission ID.
     object_id = forms.IntegerField()
 
     class Meta:

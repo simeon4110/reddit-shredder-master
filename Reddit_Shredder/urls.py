@@ -8,7 +8,7 @@ import django.contrib.auth.views
 from django.conf.urls import url
 
 import app.views
-from app.reddit_connection import reddit_schedule
+from app.reddit_connection import reddit_schedule, reddit_connection
 
 # Uncomment the next lines to enable the admin:
 # from django.conf.urls import include
@@ -20,11 +20,12 @@ urlpatterns = [
     url(r'^signup/$', app.views.signup, name='signup'),
     url(r'^authorize_callback/$', app.views.authorize_callback,
         name='authorize_callback'),
-    url(r'^reddit_api_json/$', app.views.get_json_reddit,
+    url(r'^reddit_api_json/$', reddit_connection.get_json_reddit,
         name='reddit_api_json'),
-    url(r'^shredder/output/$', app.views.shredder_function, name='output'),
     url(r'^shredder/$', app.views.shredder, name='shredder'),
-    url(r'^shredder/shred/$', app.views.shredder_function, name='shred'),
+    url(r'^shredder/shred/$', app.views.shredder_output,
+        name='shredder_output'),
+    url(r'^shredder/run/$', reddit_connection.run_shredder, name='run_shredder'),
     url(r'^profile/$', app.views.profile, name='profile'),
     url(r'^profile/scheduler/$', reddit_schedule.change_schedule,
         name='scheduler'),
