@@ -43,9 +43,9 @@ def home(request):
 @exception(logger)
 def shredder(request):
     """
-    Renders the shredder page. If the user is logged in, user is redirected to
-    profile page, if not a page requiring the user to authorize their account
-    is displayed.
+    Renders the shredder page. If user is logged in the option to select an
+    account is shown, otherwise the token saved in the session is used and used
+    to determine the account to be used.
 
     :param request: The HTTP request.
     :return: Depends on user's auth state.
@@ -57,7 +57,6 @@ def shredder(request):
     # Catch and redirect user's without tokens / accounts. Redirect to the
     # authorize page.
     if 'token' not in request.session and user.is_authenticated is False:
-        messages.info(request, "Hmmm, you may have done something unexpected.")
         return render(
             request,
             'shredder.html',
@@ -68,8 +67,16 @@ def shredder(request):
             }
         )
 
-    # Display the account selector to authorized users.
+    # Display the account selector to authorized users by adding the user.id
+    # to the RedditShredderForm class.
     if user.is_authenticated:
+        # If the user has no authorized accounts, add warning and redirect.
+        if not RedditAccounts.objects.filter(user_id=user.id):
+            messages.warning(request, "You haven't authorized an account, please"
+                                      " authorize an account under 'Authorized "
+                                      "Accounts' below to continue.")
+            return redirect('profile')
+
         return render(
             request,
             'shredder_working.html',
@@ -82,6 +89,7 @@ def shredder(request):
 
     # Render the one-off shredder for un-registered users (they're identical, I
     # separated them for semantic rather than programmatic reasons.)
+    # :TODO: Create two separate forms to allow for proper validation.
     if 'token' in request.session:
         return render(
             request,
@@ -94,9 +102,10 @@ def shredder(request):
         )
 
 
+@exception(logger)
 def shredder_output(request):
     """
-    Renders the shredder output page, the actual shredding is done via an API
+    Renders the shredder output page, the actual shredding is done via an AJAX
     POST request to the run_shredder function in reddit_connection.py.
 
     :param request: The HTTP request.
@@ -105,11 +114,8 @@ def shredder_output(request):
     assert isinstance(request, HttpRequest)
 
     user = request.user
-    if user.is_authenticated:
-        form = RedditShredderForm(user_id=user.id)
-    else:
-        form = RedditShredderForm(user_id=0)
 
+    # Add an info popup so people don't think the shredder has 'hung.'
     messages.info(request, "This process can take a while if the account being "
                            "shredded has a lot of comments and posts. Please "
                            "be patient.")
@@ -119,7 +125,8 @@ def shredder_output(request):
         messages.warning(request, 'Whoops! Something unexpected happened.')
         return redirect(shredder)
 
-    # If the user is authed, pass the account + other vars.
+    # If the user is authorized, pass the account + other vars to template.
+    # :TODO: Form validation.
     if user.is_authenticated:
         account = request.POST.get('account')
         karma_limit = request.POST.get('karma_limit')
@@ -137,7 +144,7 @@ def shredder_output(request):
             }
         )
 
-    # If the user is not authed, pass the main vars.
+    # If the user is not authorized, pass the main vars to template.
     else:
         karma_limit = request.POST.get('karma_limit')
         time = request.POST.get('keep')
@@ -238,10 +245,16 @@ def profile(request):
     """
     assert isinstance(request, HttpRequest)
 
-    # initialize the authenticated user.
     user = request.user
+
     # Get all of the user's authorized reddit accounts.
     accounts = RedditAccounts.objects.filter(user_id=user.id)
+
+    # Set initial form values dynamically.
+    record_form = RecordKeepingForm(
+        initial={'record_keeping': user.profile.record_keeping})
+    karma_form = KarmaExcludeForm(
+        initial={'karma_exclude': user.profile.karma_exclude})
 
     # Ensure user is authenticated.
     if user.is_authenticated is True:
@@ -254,10 +267,9 @@ def profile(request):
                 'user': user,
                 'accounts': accounts,
                 'form': SchedulerForm,
-                'p_form': RecordKeepingForm(),
-                'k_form': KarmaExcludeForm(),
+                'p_form': record_form,
+                'k_form': karma_form,
                 'auth': get_auth_url(),
-                'keep': RedditShredderForm,
             }
         )
 
@@ -284,7 +296,7 @@ def logs(request):
     output = SchedulerOutput.objects.filter(user_id=user.id)
 
     # Ensure user is authenticated. Render logs.
-    if user.is_authenticated is True:
+    if user.is_authenticated:
         return render(
             request,
             'logs.html',
@@ -301,10 +313,10 @@ def logs(request):
 @login_required
 def privacy(request):
     """
-    Updates the user's privacy settings.
+    Updates the user's privacy settings. Accessed via a POST request.
 
     :param request: The Http Request.
-    :return: Redirect to profile.
+    :return: Redirect to profile with success / error message attached.
     """
     assert isinstance(request, HttpRequest)
 
@@ -320,7 +332,7 @@ def privacy(request):
         messages.warning(request, "You must log in.")
         return redirect('/login/')
 
-    # Get form data and user.id.
+    # Get form data.
     form = RecordKeepingForm(request.POST)
 
     # If the form is valid, update user's record keeping preference.
@@ -343,7 +355,7 @@ def karma_exclude(request):
     are not deleted.)
 
     :param request: The HTTP Request.
-    :return: A redirect to the profile + success message.
+    :return: A redirect to the profile with success / error message attached.
     """
     assert isinstance(request, HttpRequest)
 
@@ -372,6 +384,13 @@ def karma_exclude(request):
 
         return redirect('/profile/')
 
+    else:
+        messages.warning(request, "Whoops! Something went wrong. You probably "
+                                  "entered too large of a number, the max value "
+                                  "for your Karma Threshold is 999999999.")
+
+        return redirect('/profile/')
+
 
 @exception(logger)
 @login_required
@@ -392,7 +411,7 @@ def manual_exclude(request):
         return redirect('/login/')
 
     # Catch and unset user unset requests. This is done via a simple GET
-    # method, nothing fancy.
+    # method, nothing fancy. User's are redirected to a clean URL.
     if request.GET.get('unset') is not None:
         item_id = request.GET.get('unset')
         excluded = ExcludedItems.objects.filter(excluded_item_id=item_id)
@@ -413,9 +432,12 @@ def manual_exclude(request):
         excluded.save()
         return redirect('/profile/exclude/')
 
+    # Get a list of all of the user's exclusions.
     excluded = ExcludedItems.objects.filter(user_id=user.id).values_list(
         'excluded_item_id', flat=True)
 
+    # Strip the list and append it to a clean array. I no longer remember why I
+    # did it this way (JH).
     excluded_array = []
     for i in excluded:
         excluded_array.append(str(i))
@@ -437,7 +459,7 @@ def manual_exclude(request):
 @login_required
 def delete(request):
     """
-    Allows users to manually delete comments / subs.
+    Allows users to manually delete a comment / sub.
 
     :param request: The http request.
     :return: A page of the user's comments and subs, sorted by user_name.
@@ -451,7 +473,7 @@ def delete(request):
         messages.warning(request, "You must log in to access this page.")
         return redirect('/login/')
 
-    # Catch get requests for the delete.
+    # Catch get requests for delete.
     if request.GET.get('delete') is not None:
         comment = request.GET.get('delete')
         user_name = request.GET.get('user_name')
@@ -495,12 +517,24 @@ def authorize_callback(request):
     if request.method != "GET":
         raise Exception
 
+    # If an error message is returned, attach an error message and redirect.
+    if request.GET.get('error'):
+        messages.warning(request, 'You must authorize the shredder by clicking '
+                                  '"allow" to continue. Please try again.')
+        # If the user is authenticated, redirect to profile.
+        if request.user.is_authenticated:
+            return redirect('profile')
+        # Otherwise, redirect to tha shredder_auth page.
+        else:
+            return redirect('shredder')
+
     # Ensure user is authenticated.
     if request.user.is_authenticated:
         user = request.user
 
-        # Get the refresh_token by immediatly using the code to obtain auth.
+        # Get the refresh_token by immediately using the code.
         token = get_token(request.GET.get('code'))
+        # Immediately use the code, this catches errors of mis-adventure.
         user_name = get_reddit_username(token)
 
         # Create a query set of all the reddit account objects.
@@ -536,3 +570,57 @@ def authorize_callback(request):
         request.session['token'] = get_token(request.GET.get('code'))
 
         return redirect('shredder')
+
+
+@login_required
+def delete_account(request):
+    """
+    Purges all of a users data from all database tables, also deletes account.
+
+    :param request: The HTTP request.
+    :return: Redirect to login page.
+    """
+    assert isinstance(request, HttpRequest)
+
+    user = request.user
+
+    # Delete exclusions.
+    try:
+        excluded_items = ExcludedItems.objects.get(user_id=user.id)
+        for item in excluded_items:
+            item.delete()
+
+    # Do nothing if there aren't any excluded items.
+    except ExcludedItems.DoesNotExist or UnboundLocalError:
+        pass
+
+    # Delete Reddit Accounts.
+    try:
+        accounts = RedditAccounts.objects.get(user_id=user.id)
+        if accounts:
+            for item in accounts:
+                item.delete()
+
+    # Do nothing if no accounts exist.
+    except RedditAccounts.DoesNotExist or UnboundLocalError:
+        pass
+
+    # Delete Scheduler Output.
+    try:
+        scheduler_output = SchedulerOutput.objects.get(user_id=user.id)
+        if scheduler_output:
+            for item in scheduler_output:
+                item.delete()
+
+    # Do nothing if no output exists.
+    except SchedulerOutput.DoesNotExist or UnboundLocalError:
+        pass
+
+    # Delete profile
+    user.profile.delete()
+
+    # Delete Auth profile.
+    user.delete()
+
+    messages.success(request, "Your account has been successfully deleted.")
+    return redirect('login')

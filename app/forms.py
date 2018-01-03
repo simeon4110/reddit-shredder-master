@@ -71,6 +71,7 @@ class KarmaExcludeForm(forms.ModelForm):
     Allows user's to set a Karma threshold.
     """
 
+    # Create the form from the user's profile.
     class Meta:
         model = Profile
         fields = ['karma_exclude']

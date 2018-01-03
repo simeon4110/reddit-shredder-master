@@ -4,8 +4,6 @@ a pre-selected schedule. All timezones MUST be in UTC. If the timezones
 mismatch, the entire program logic will fail.
 
 Also handles requests to /profile/schedule, updating the user's schedule.
-
-Written by Josh Harkema in December of 2017.
 """
 
 from datetime import datetime
@@ -13,23 +11,25 @@ from multiprocessing import Process
 
 from django.contrib import messages
 from django.contrib.auth.models import User
-from django.http import HttpRequest
 from django.shortcuts import redirect
 
 from app.forms import SchedulerForm
-from app.models import SchedulerOutput, RedditAccounts, ExcludedItems
+from app.models import SchedulerOutput, ExcludedItems
 from app.reddit_connection.reddit_connection import *
 
 
 @exception(logger)
 def change_schedule(request):
     """
-    Processes requests to change an reddit accounts schedule.
+    Processes requests to change an reddit account's schedule. Scheduler data is
+    NOT linked to the user account. This prevents it from being orphaned if an
+    token expires and the user's RedditAccount object is deleted.
 
     :param request: The request sent to the URL.
     :return: The profile page, rendered with a success message.
     """
     assert isinstance(request, HttpRequest)
+
     # If the page is not rendered with POST, redirect to profile.
     if request.method != "POST":
         messages.warning(request, "Whoops, not sure how you got here.")
@@ -62,18 +62,18 @@ def change_schedule(request):
 
 
 @exception(logger)
-def save_output(id, item_id, item_body, user_name, status):
+def save_output(_id, item_id, item_body, user_name, status):
     """
     Saves auto shredder output to DB.
 
-    :param id: The user's PK.
+    :param _id: The user's PK.
     :param item_id: The sub or comment ID.
     :param item_body: The comment body or submission title.
     :param user_name: The Reddit user name.
     :param status: DELETED or SKIPPED.
     :return: Nothing, writes directly to db.
     """
-    output = SchedulerOutput(user_id=id,
+    output = SchedulerOutput(user_id=_id,
                              sub_comment_id=item_id,
                              sub_comment_body=item_body,
                              op_run_time=datetime.datetime.utcnow(),

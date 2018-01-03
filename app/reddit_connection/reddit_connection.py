@@ -1,5 +1,6 @@
 """
-Handles the Reddit connection persistence.
+This module contains the functions used to connect to and manipulate the Reddit
+API. All of the functions are documented below.
 """
 
 import datetime
@@ -31,12 +32,12 @@ reddit = praw.Reddit(client_id=CLIENT_ID,
 
 
 @exception(logger)
-def delete_comment(cid, token, item_type):
+def delete_comment(_id, token, item_type):
     """
     Manual deletion of a specific comment or sub. Comments are overwritten,
     submissions are not.
 
-    :param id: The comment or submission ID.
+    :param _id: The comment or submission ID to be deleted.
     :param token: The user's saved refresh token.
     :param item_type: Comment / Submission
     :return: A success / error message. Depending on the result.
@@ -49,13 +50,13 @@ def delete_comment(cid, token, item_type):
 
     # Catch and delete submission types.
     if item_type == "Submission":
-        submission = reddit_refresh.submission(cid)
+        submission = reddit_refresh.submission(_id)
         submission.delete()
         message = "Great Success! Submission deleted!"
 
     # Catch and delete comment types.
     elif item_type == "Comment":
-        comment = reddit_refresh.comment(cid)
+        comment = reddit_refresh.comment(_id)
         comment.edit(string_generator())
         comment.delete()
         message = "Great Success! Comment overwritten and deleted!"
@@ -68,16 +69,16 @@ def delete_comment(cid, token, item_type):
     return message
 
 
-@login_required
 @exception(logger)
+@login_required
 def get_json_reddit(request):
     """
-    Queries Reddit API and returns an array. This is used to allow for AJAX
-    loading on the API requests.
+    Queries Reddit API and returns an array of dicts via JsonResponse. This is
+    used to allow for AJAX loading on the API requests.
 
     :param request: The HTTP request.
     :return: JsonResponse of the API query (includes all of the user's comments
-    and submissions for every account they have authorized.)
+             and submissions for every account they have authorized.)
     """
     assert isinstance(request, HttpRequest)
 
@@ -87,7 +88,7 @@ def get_json_reddit(request):
     accounts = RedditAccounts.objects.filter(user_id=user.id).values_list(
         'reddit_token', flat=True)
 
-    # Init an empty object to hold the data.
+    # Init an empty object to hold the output data.
     data = []
 
     # Iterate through all accounts.
@@ -124,9 +125,11 @@ def get_json_reddit(request):
 @exception(logger)
 def run_shredder(request):
     """
+    This is the manual shredder function. It is called via an AJAX request to
+    the run_shredder
 
-    :param request:
-    :return:
+    :param request: The HTTP request.
+    :return: A JsonResponse of the shredder's output.
     """
     assert isinstance(request, HttpRequest)
 
@@ -147,7 +150,7 @@ def run_shredder(request):
     else:
         raise Exception
 
-    # Get the other request data needed.
+    # Get the other request data needed. Convert to ints to validate data.
     keep = int(request.POST.get('keep'))
     karma_limit = int(request.POST.get('karma_limit'))
 
@@ -205,9 +208,6 @@ def run_shredder(request):
             }
             output.append(temp_data)
 
-    if not output:
-        raise Exception
-
     return JsonResponse(output, safe=False)
 
 
@@ -230,7 +230,9 @@ def get_token(code):
     :param code: The code returned from the Reddit API.
     :return: A refresh token.
     """
+
     token = reddit.auth.authorize(code)
+
     return str(token)
 
 
@@ -306,4 +308,3 @@ def delta_now(time):
     """
     delta = datetime.datetime.now(timezone.utc) - timedelta(hours=time)
     return delta
-

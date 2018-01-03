@@ -20,9 +20,7 @@
                         <form action="karma_limit/" method="post" class="form-inline">
                             {% csrf_token %}
                             <td>
-                                Current Threshold: {{ user.profile.karma_exclude }}
-                                <div class="form-group mt-2">
-                                    <label for="karma exclude" id="karma_exclude">Set Karma Threshold:</label>
+                                <div class="form-group">
                                     {{ k_form.karma_exclude }}
                                     <input type="hidden" name="next" value="/profile/karma_limit"/>
                                     <button type="submit" name="Set Threshold" class="btn btn-primary mt-2">Set
@@ -34,20 +32,11 @@
                         </form>
                     </tr>
                     <tr>
-                        <th scope="row">Record Keeping: *</th>
+                        <th scope="row">Record Keeping:</th>
                         <form action="privacy/" method="post" class="form-inline">
                             {% csrf_token %}
                             <td>
-                                {% if user.profile.record_keeping == False %}
-                                    Current Setting: <strong>No</strong>
-                                {% endif %}
-                                {% if user.profile.record_keeping == True %}
-                                    Current Setting: <strong>Yes</strong>
-                                {% endif %}
-
-                                <div class="form-group mt-2">
-                                    <label for="record_keeping" id="record_keeping">Keep Output from the
-                                        Shredder?</label>
+                                <div class="form-group">
                                     {{ p_form.record_keeping }}
                                     <input type="hidden" name="next" value="/profile/privacy"/>
                                     <button type="submit" name="Set Threshold" class="btn btn-primary mt-2">Set
@@ -60,9 +49,42 @@
                     </tr>
                     <tr>
                         <th scope="row">Add Reddit Account:</th>
-                        <td><a href="{{ auth }}" class="btn btn-primary">Authorize &raquo;</a></td>
+                        <td><a href="{{ auth }}" class="btn btn-primary">Authorize the Shredder &raquo;</a></td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Delete ORS Account:</th>
+                        <td>
+                            <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#delete">
+                                Delete ORS Account &raquo;
+                            </button>
+                        </td>
                     </tr>
                 </table>
+            </div>
+            <div id="delete" class="modal fade" tabindex="-1" aria-labelledby="Are you sure?" aria-hidden="true"
+                 role="dialog">
+                <div class="modal-dialog" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header bg-danger">
+                            <h4 class="modal-title" id="Are you sure?">Are you sure?</h4>
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            <p>
+                                Clicking "Yes" will purge all your data from the shredder's database. You will be able
+                                to use the manual shredder, but to use the auto-shredder you'll need to sign up again.
+                            </p>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
+                            <a href="/profile/delete_account">
+                                <button type="button" class="btn btn-danger">Confirm</button>
+                            </a>
+                        </div>
+                    </div>
+                </div>
             </div>
             <div class="col-md">
                 <h4>FAQ:</h4>

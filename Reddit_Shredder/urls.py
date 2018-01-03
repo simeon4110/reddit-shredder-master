@@ -35,6 +35,8 @@ urlpatterns = [
     url(r'^profile/delete/$', app.views.delete, name='delete'),
     url(r'^profile/logs/$', app.views.logs, name='logs'),
     url(r'^profile/exclude/$', app.views.manual_exclude, name='exclude'),
+    url(r'^profile/delete_account/$', app.views.delete_account,
+        name='delete_account'),
     url(r'^changelog/$', app.views.changelog, name='changelog'),
     url(r'accounts/login/$',
         django.contrib.auth.views.login,
