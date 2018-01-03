@@ -586,7 +586,7 @@ def delete_account(request):
 
     # Delete exclusions.
     try:
-        excluded_items = ExcludedItems.objects.get(user_id=user.id)
+        excluded_items = ExcludedItems.objects.filter(user_id=user.id)
         for item in excluded_items:
             item.delete()
 
@@ -596,7 +596,7 @@ def delete_account(request):
 
     # Delete Reddit Accounts.
     try:
-        accounts = RedditAccounts.objects.get(user_id=user.id)
+        accounts = RedditAccounts.objects.filter(user_id=user.id)
         if accounts:
             for item in accounts:
                 item.delete()
@@ -607,7 +607,7 @@ def delete_account(request):
 
     # Delete Scheduler Output.
     try:
-        scheduler_output = SchedulerOutput.objects.get(user_id=user.id)
+        scheduler_output = SchedulerOutput.objects.filter(user_id=user.id)
         if scheduler_output:
             for item in scheduler_output:
                 item.delete()
