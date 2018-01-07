@@ -80,6 +80,7 @@ def get_json_reddit(request):
     :return: JsonResponse of the API query (includes all of the user's comments
              and submissions for every account they have authorized.)
     """
+
     assert isinstance(request, HttpRequest)
 
     user = request.user

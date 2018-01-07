@@ -59,7 +59,7 @@ class RedditShredderForm(forms.Form):
 
     # The user's karma threshold preference.
     karma_limit = forms.IntegerField(label=_('Karma Threshold'),
-                                     initial=0,
+                                     initial=1,
                                      widget=forms.NumberInput({
                                          'class': 'form-control',
                                          'placeholder': 'Karma Threshold',
