@@ -48,6 +48,13 @@
                     <div class="form-group">
                         <label for="id_karma" class="control-label">Karma Threshold: </label>
                         {{ form.karma_limit }}
+                    </div>
+                    <div class="form-group">
+                        <label for="id_karma" class="control-label">Delete Everything? </label>
+                        {{ form.delete_everything }}
+                        {% if user.is_authenticated is False %}
+                            <input type="hidden" name="account" value="None"/>
+                        {% endif %}
                         <input type="submit" value="Shred My Account &raquo;" class="btn btn-warning mt-3"/>
                     </div>
                 </form>

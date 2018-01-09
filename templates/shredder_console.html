@@ -85,7 +85,8 @@
                     'type': 'POST',
                     'data': {
                         'account': '{{ account|safe }}',
-                        'keep': '{{ time|safe }}',
+                        'keep': {{ time|safe }},
+                        'delete_everything': '{{ delete_everything|safe }}',
                         'karma_limit': {{ karma_limit|safe }}
                     }
                 },

@@ -32,6 +32,7 @@ class RedditShredderForm(forms.Form):
     # The account the user wants to shred (reddit_user_name).
     account = forms.ModelChoiceField(queryset=RedditAccounts.objects.none(),
                                      label=_('Select an Account'),
+                                     required=False,
                                      widget=forms.Select({
                                          'class': 'form-control',
                                      }))
@@ -64,6 +65,12 @@ class RedditShredderForm(forms.Form):
                                          'class': 'form-control',
                                          'placeholder': 'Karma Threshold',
                                      }))
+
+    delete_everything = forms.BooleanField(label=_('Delete Everything?'),
+                                           required=False,
+                                           widget=forms.CheckboxInput({
+                                               'class': 'form-control'
+                                           }))
 
 
 class KarmaExcludeForm(forms.ModelForm):

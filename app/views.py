@@ -130,6 +130,7 @@ def shredder_output(request):
     if user.is_authenticated:
         account = request.POST.get('account')
         karma_limit = request.POST.get('karma_limit')
+        delete_everything = request.POST.get('delete_everything')
         time = request.POST.get('keep')
 
         return render(
@@ -140,6 +141,7 @@ def shredder_output(request):
                 'year': datetime.datetime.now().year,
                 'account': account,
                 'karma_limit': karma_limit,
+                'delete_everything': delete_everything,
                 'time': time,
             }
         )
@@ -148,6 +150,7 @@ def shredder_output(request):
     else:
         karma_limit = request.POST.get('karma_limit')
         time = request.POST.get('keep')
+        delete_everything = request.POST.get('delete_everything')
 
         return render(
             request,
@@ -156,6 +159,7 @@ def shredder_output(request):
                 'title': 'Shredder Output',
                 'year': datetime.datetime.now().year,
                 'karma_limit': karma_limit,
+                'delete_everything': delete_everything,
                 'time': time,
             }
         )
@@ -180,7 +184,6 @@ def signup(request):
             form.save()
             username = form.cleaned_data.get('username')
             raw_password = form.cleaned_data.get('password1')
-            email = form.cleaned_data.get('email')
             user = authenticate(username=username, password=raw_password)
             login(request, user)
 

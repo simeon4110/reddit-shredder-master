@@ -123,11 +123,12 @@ def get_json_reddit(request):
     return JsonResponse(data, safe=False)
 
 
-@exception(logger)
 def run_shredder(request):
     """
     This is the manual shredder function. It is called via an AJAX request to
-    the run_shredder
+    the run_shredder function.
+    :TODO: There needs to be better validation. But, this function can be called
+           via an API request in its current state.
 
     :param request: The HTTP request.
     :return: A JsonResponse of the shredder's output.
@@ -138,10 +139,9 @@ def run_shredder(request):
 
     # Get the token from the user's account if the user is authorized.
     if user.is_authenticated:
-        if request.POST.get('account'):
-            account = request.POST.get('account')
-            account_object = RedditAccounts.objects.get(reddit_user_name=account)
-            token = account_object.reddit_token
+        account = request.POST.get('account')
+        account_object = RedditAccounts.objects.get(reddit_user_name=account)
+        token = account_object.reddit_token
 
     # Otherwise, get the token from the session store.
     elif request.session['token']:
@@ -151,12 +151,38 @@ def run_shredder(request):
     else:
         raise Exception
 
-    # Get the other request data needed. Convert to ints to validate data.
+    # Get the other required values from the POST request.
     keep = int(request.POST.get('keep'))
     karma_limit = int(request.POST.get('karma_limit'))
+    delete_everything = request.POST.get('delete_everything')
 
     # stores the output from the shredding process.
     output = []
+
+    # Delete everything if the user selects delete_everything. Also, use
+    # the delete everything function if the user sets no karma_limit or keep
+    # values.
+    if delete_everything == 'on' or keep == 0 and karma_limit == 1:
+        for comment in get_comments(token):
+            temp_data = {
+                'cid': comment.id,
+                'body': comment.body,
+                'status': 'DELETED',
+            }
+            comment.edit(string_generator())
+            comment.delete()
+            output.append(temp_data)
+
+        for submission in get_submissions(token):
+            temp_data = {
+                'cid': submission.id,
+                'body': submission.title,
+                'status': 'DELETED',
+            }
+            submission.delete()
+            output.append(temp_data)
+
+        return JsonResponse(output, safe=False)
 
     # overwrites and deletes a user's comments.
     for comment in get_comments(token):
@@ -165,7 +191,7 @@ def run_shredder(request):
         time = time.replace(tzinfo=pytz.utc)
 
         # this overwrites the comment, saves it and deletes it
-        if time < delta_now(keep) and comment.score < karma_limit:
+        if time < delta_now(keep) and comment.score <= karma_limit:
             temp_data = {
                 'cid': comment.id,
                 'body': comment.body,
@@ -191,7 +217,7 @@ def run_shredder(request):
         time = time.replace(tzinfo=pytz.utc)
 
         # delete the submission
-        if time < delta_now(keep) and submission.score < karma_limit:
+        if time < delta_now(keep) and submission.score <= karma_limit:
             temp_data = {
                 'cid': submission.id,
                 'body': submission.title,
@@ -307,5 +333,11 @@ def delta_now(time):
     :param time: The number of hours between now and the delta.
     :return: Now minus the delta.
     """
-    delta = datetime.datetime.now(timezone.utc) - timedelta(hours=time)
+    # Convert time to int.
+    time = int(time)
+
+    # Get the delta and change the timezone to UTC.
+    delta = datetime.datetime.now(tz=timezone.utc) - timedelta(hours=time)
+    delta = delta.replace(tzinfo=pytz.utc)
+
     return delta

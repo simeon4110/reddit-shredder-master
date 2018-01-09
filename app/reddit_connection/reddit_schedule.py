@@ -203,7 +203,7 @@ def run_shredder():
     procs = []
 
     # Verify all available tokens are valid.
-    check_tokens()
+    # check_tokens() Disabled until I can do better error checking.
 
     # Init proc for each account in the DB.
     for account in RedditAccounts.objects.values_list('user_id',
