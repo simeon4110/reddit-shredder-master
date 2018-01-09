@@ -173,6 +173,8 @@ def schedule_shredder(account):
                             user_name=account[2],
                             status="SKIPPED")
 
+    logger.info(account[0], 'shredded successfully.')
+
 
 @exception(logger)
 def check_tokens():
@@ -206,12 +208,14 @@ def run_shredder():
     # check_tokens() Disabled until I can do better error checking.
 
     # Init proc for each account in the DB.
+    logger.info('Auto shredder started.')
     for account in RedditAccounts.objects.values_list('user_id',
                                                       'schedule',
                                                       'reddit_user_name',
                                                       'reddit_token',
                                                       'id'):
         proc = Process(target=schedule_shredder(account))
+        logger.info('shredding...', account[0])
         procs.append(proc)
         proc.start()
 

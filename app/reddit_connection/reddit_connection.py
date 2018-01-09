@@ -137,6 +137,9 @@ def run_shredder(request):
 
     user = request.user
 
+    # Log shredder call.
+    logger.info('Shredder initiated')
+
     # Get the token from the user's account if the user is authorized.
     if user.is_authenticated:
         account = request.POST.get('account')
@@ -182,6 +185,8 @@ def run_shredder(request):
             submission.delete()
             output.append(temp_data)
 
+        # Log successful run.
+        logger.info('Manual Shredder ran successfully')
         return JsonResponse(output, safe=False)
 
     # overwrites and deletes a user's comments.
@@ -234,7 +239,8 @@ def run_shredder(request):
                 'status': 'SKIPPED',
             }
             output.append(temp_data)
-
+    # Log successful run.
+    logger.info('Manual Shredder ran successfully')
     return JsonResponse(output, safe=False)
 
 
