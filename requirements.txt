@@ -12,4 +12,4 @@ requests==2.18.4
 setuptools==38.2.4
 update-checker==0.16
 urllib3==1.22
-wheel==0.30.0
+wheel==0.38.1
